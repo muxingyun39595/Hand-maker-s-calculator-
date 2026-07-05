@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="logo.png" type="image/png">
+<title>手作💰利潤計算小工具｜紅塵小築</title>
+<!-- SEO搜尋標籤 -->
+<meta name="description" content="免費純前端手作創業計算器，金屬配件、手串單件成本核算、售價淨利、擺攤回本試算，輸入授權序號即可解鎖全部功能，無本地資料留存。">
+<meta name="keywords" content="手作成本計算,手串定價,金屬配件克重成本,擺攤利潤試算,手作創業回本工具">
+<meta name="author" content="紅塵小築">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="手作攤主成本利潤計算器">
+<meta property="og:description" content="專為手作飾品攤主設計的免費線上成本核算工具">
+<meta property="og:type" content="website">
+<style>
+*{
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+font-family: "微軟正黑體", Noto Sans TC, sans-serif;
+}
+body{
+background: #f2e6ce;
+display: flex;
+flex-direction: column;
+min-height: 100vh;
+position: relative;
+}
+/* 頂部標頭區 */
+.top-header{
+width: 100%;
+height: 140px;
+background: url("logo.png") center / cover no-repeat;
+position: relative;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.header-mask{
+position: absolute;
+inset:0;
+background: rgba(0,0,0,0.45);
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.header-title{
+font-size: 36px;
+color: #fff;
+font-weight: bold;
+letter-spacing: 3px;
+}
+.body-wrap{
+display: flex;
+flex: 1;
+}
+
+/* 左上角序號解鎖面板（簡化改版） */
+.unlock-wrap{
+position: fixed;
+top: 12px;
+left: 12px;
+z-index: 99;
+width: 280px;
+border-radius: 12px;
+overflow: hidden;
+transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+.unlock-wrap.hide-unlock{
+opacity: 0;
+visibility: hidden;
+pointer-events: none;
+}
+.unlock-inner-mask{
+background: rgba(0,0,0,0.7);
+padding: 18px 14px;
+color: #fff;
+}
+.unlock-title{
+font-size: 22px;
+font-family: "瘦金體", serif;
+text-align: center;
+margin-bottom: 14px;
+color: #fff;
+letter-spacing: 1px;
+}
+.unlock-copyright{
+font-size: 11px;
+text-align: center;
+margin-top: 12px;
+opacity: 0.85;
+}
+.line-buy-link{
+display:block;
+text-align:center;
+margin-top:8px;
+font-size:12px;
+color:#9ee7ff;
+text-decoration:underline;
+}
+
+.input-row{
+margin: 8px 0;
+display: flex;
+flex-direction: column;
+}
+label{
+font-size: 13px;
+margin-bottom: 3px;
+}
+input{
+padding: 7px 10px;
+border: none;
+border-radius: 4px;
+font-size: 14px;
+color: #000;
+}
+.msg-text{
+font-size: 12px;
+margin: 6px 0;
+line-height:1.4;
+}
+.err{color:#ffb0b0;}
+.ok{color:#99ffbb;}
+button{
+background: #385942;
+color: #fff;
+border: none;
+padding: 8px 12px;
+border-radius: 4px;
+cursor: pointer;
+margin-top: 4px;
+width: 100%;
+}
+button:hover{background:#2d4735;}
+
+/* 左側導覽列表 */
+.sidebar{
+width: 240px;
+padding-top: 30px;
+padding-left: 10px;
+z-index:10;
+position:relative;
+}
+.side-item{
+padding: 10px 12px;
+margin: 6px 0;
+cursor: pointer;
+border-radius: 6px;
+color: #000;
+font-size: 15px;
+user-select:none;
+}
+.side-item.active{
+background: #385942;
+color: #fff;
+}
+
+/* 主內容區域 */
+.main-content{
+flex: 1;
+padding: 30px 30px 30px;
+position:relative;
+z-index:10;
+}
+.page-title{
+font-size: 28px;
+font-family: "瘦金體", serif;
+color: #385942;
+margin-bottom: 20px;
+letter-spacing: 2px;
+}
+.calc-page{display: none;}
+.calc-page.show{display: block;}
+.calc-input-group{
+margin: 14px 0;
+max-width: 720px;
+}
+.result-box{
+margin-top: 14px;
+padding: 12px;
+font-size: 14px;
+line-height: 1.6;
+color: #000;
+background:#fff8e8;
+border-radius:6px;
+}
+.formula-note{
+font-size: 12px;
+color: #333;
+margin-top: 6px;
+}
+.grid-row{
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap:10px;
+max-width:720px;
+}
+.grid-three{
+grid-template-columns: 1fr 1fr 1fr;
+}
+/* 全域鎖定遮罩 */
+.lock-mask{
+position: fixed;
+inset: 0;
+background: rgba(242,230,206,0.93);
+z-index: 90;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 22px;
+color: #912020;
+text-align:center;
+padding:20px;
+}
+.hidden{display: none !important;}
+</style>
+</head>
+<body>
+<!-- 頂部標頭 -->
+<div class="top-header">
+    <div class="header-mask">
+        <div class="header-title">💰手作利潤計算小工具</div>
+    </div>
+</div>
+
+<div class="body-wrap">
+<!-- 左上角純序號解鎖面板（改版後唯一登入介面） -->
+<div class="unlock-wrap" id="unlockBox">
+<div class="unlock-inner-mask">
+<div class="unlock-title">手作計算工具</div>
+
+<div class="input-row">
+<label>輸入付費授權序號解鎖</label>
+<input id="authSerial" placeholder="貼上你的專屬序號">
+</div>
+<button onclick="unlockBySerial()">序號驗證並解鎖功能</button>
+<div class="msg-text" id="unlockMsg"></div>
+<a class="line-buy-link" href="https://line.me/R/ti/p/@664xqnmc" target="_blank">👉 點我加LINE取得授權序號</a>
+
+<div class="unlock-copyright">© 2026 紅塵小築 版權所有</div>
+</div>
+</div>
+
+<!-- 全域功能鎖定遮罩 -->
+<div class="lock-mask" id="lockMask">請輸入合法授權序號，解鎖全部手作利潤計算功能</div>
+
+<!-- 左側切換導覽 -->
+<div class="sidebar">
+<div class="side-item active" onclick="switchPage('page1')">🎋 依目標利潤設定售價</div>
+<div class="side-item" onclick="switchPage('page2')">🎋 計算銷售回本門檻</div>
+<div class="side-item" onclick="switchPage('page3')">🎋 簡化快速定價計算</div>
+<div class="side-item" onclick="switchPage('page4')">🎋 單件成品淨利核算</div>
+<div class="side-item" onclick="switchPage('page5')">🎋 散料克重成本攤銷</div>
+<div class="side-item" onclick="switchPage('page6')">🏪 擺攤多商品回本計算【新】</div>
+</div>
+
+<!-- 主計算內容（完整保留6大計算模組） -->
+<div class="main-content">
+<!-- 頁面1 -->
+<div class="calc-page show" id="page1">
+<div class="page-title">🎋 依目標利潤設定售價</div>
+<div class="calc-input-group">
+<label>單件物料成本（元）</label>
+<input id="m1-goods" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>單件包材成本（元）</label>
+<input id="m1-pack" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>工具總投入成本（元）</label>
+<input id="m1-tool" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>其他雜項總成本（元）</label>
+<input id="m1-other" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>期望單件淨利潤（元）</label>
+<input id="m1-profit" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>預計總銷售份數</label>
+<input id="m1-count" type="number" min="1" step="1">
+</div>
+<button onclick="calcMode1()">計算建議售價</button>
+<div class="result-box" id="res1"></div>
+<div class="formula-note">公式：單件售價 = 物料+包材 + (工具+雜項)/總份數 + 目標單件利潤</div>
+</div>
+
+<!-- 頁面2 -->
+<div class="calc-page" id="page2">
+<div class="page-title">🎋 計算銷售回本門檻</div>
+<div class="calc-input-group">
+<label>單件物料成本（元）</label>
+<input id="m2-goods" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>單件包材成本（元）</label>
+<input id="m2-pack" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>工具總投入成本（元）</label>
+<input id="m2-tool" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>其他雜項總成本（元）</label>
+<input id="m2-other" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>預定單件售價（元）</label>
+<input id="m2-price" type="number" min="0" step="0.01">
+</div>
+<button onclick="calcMode2()">計算回本數據</button>
+<div class="result-box" id="res2"></div>
+<div class="formula-note">單件邊際利潤=售價-物料-包材；回本份數=(工具+雜項)÷邊際利潤</div>
+</div>
+
+<!-- 頁面3 -->
+<div class="calc-page" id="page3">
+<div class="page-title">🎋 簡化快速定價計算</div>
+<div class="calc-input-group">
+<label>單件物料成本（元）</label>
+<input id="m3-goods" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>單件包材成本（元）</label>
+<input id="m3-pack" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>期望單件淨利潤（元）</label>
+<input id="m3-profit" type="number" min="0" step="0.01">
+</div>
+<button onclick="calcMode3()">快速定價</button>
+<div class="result-box" id="res3"></div>
+<div class="formula-note">售價 = 物料成本 + 包材成本 + 目標淨利</div>
+</div>
+
+<!-- 頁面4 -->
+<div class="calc-page" id="page4">
+<div class="page-title">🎋 單件成品淨利核算</div>
+<div class="calc-input-group">
+<label>單件物料成本（元）</label>
+<input id="m4-goods" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>單件包材成本（元）</label>
+<input id="m4-pack" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>單件實際售價（元）</label>
+<input id="m4-price" type="number" min="0" step="0.01">
+</div>
+<button onclick="calcMode4()">計算單件淨利</button>
+<div class="result-box" id="res4"></div>
+<div class="formula-note">單件淨利 = 售價 - 物料 - 包材</div>
+</div>
+
+<!-- 頁面5 -->
+<div class="calc-page" id="page5">
+<div class="page-title">🎋 散料克重成本攤銷</div>
+<div class="calc-input-group">
+<label>整批物料採購總金額（元）</label>
+<input id="m5-totalCost" type="number" min="0" step="0.01">
+</div>
+<div class="calc-input-group">
+<label>整批物料總克重（g）</label>
+<input id="m5-totalGram" type="number" min="0.1" step="0.01">
+</div>...
